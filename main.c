@@ -6,6 +6,7 @@
 
 #define  H  5
 #define  W  6
+#define  dir_inc 2
 //#define  MAX_STEP 3
 //#define DEBUG
 
@@ -21,6 +22,7 @@
 
 int MAX_STEP = 20;
 
+int   gcomb_cnt=0;
 int   weighting_table [7] = {0,1,1,1,1,1,1}; //  index 0 is not used
 
 unsigned int wr_ptr,rd_ptr;
@@ -71,7 +73,7 @@ static PyObject *calc_path(PyObject *self, PyObject *args) {
 
    /* Do something interesting here. */
    main_func(s);
-   return Py_BuildValue("s",point_array);
+   return Py_BuildValue("si",point_array,gcomb_cnt);
 
 }
 
@@ -172,7 +174,8 @@ print_data(data);
 #endif
 
                num=0;
-               for(i=0;i<8;i++)
+               //for(i=0;i<8;i++)
+               for(i=0;i<8;i+=dir_inc)
                {
                   new_xy_val(yy,xx,i,&y2,&x2);
 
@@ -218,7 +221,9 @@ print_data(data);
                visit[yy][xx]=0;
                first_step=0;
                  step++;
-           }
+           } // end of while
+
+           path[y*W+x][step]  = yy*W+xx; 
 #ifdef DEBUG
                printf("========================================\n");
                printf("start_point (x:%d,y:%d) score:%d\n",x,y,final_score);
@@ -233,6 +238,7 @@ print_data(data);
         print_path(path[max_index]);
 
 
+        gcomb_cnt = score_array[max_index]; 
         point_num = MAX_STEP;
 
        for(y=0;y<H;y++)
@@ -246,7 +252,7 @@ print_data(data);
 void print_path(int * path)
 {
     int i,x,y;
-    for(i=0;i<MAX_STEP;i++)
+    for(i=0;i<MAX_STEP+1;i++)
     {
        x = path[i] %W;
        y = path[i] / W;
@@ -366,7 +372,8 @@ int   estimate_score(int data[H][W])
 #endif
            }
 
-             total_score= bead_total_cnt* combo_total_cnt;
+             //total_score= bead_total_cnt* combo_total_cnt;
+             total_score= combo_total_cnt;
 #ifdef DEBUG
             printf("total_score:%d, total_comb:%d, total_bead\n",total_score,combo_total_cnt,bead_total_cnt);
 #endif
@@ -391,11 +398,14 @@ void   drop(int data[H][W])
 
      for(x=0;x<W;x++)
      {
-         dest_ptr=0;
-         for(y=0;y<H;y++)
+         //dest_ptr=0;
+         dest_ptr=H-1;
+         //for(y=0;y<H;y++)
+         for(y=H-1;y>=0;y--)
          {
             if(data[y][x] <= plus)
-                tmp[dest_ptr++][x] = data[y][x];
+                tmp[dest_ptr--][x] = data[y][x];
+                //tmp[dest_ptr++][x] = data[y][x];
 
          }
      }
@@ -466,7 +476,8 @@ int   search_point(char visit[H][W], int data[H][W])
            if((x==2) && (y==4))
               x=2;
 
-           for(i=0;i<8;i++)  // 0 ~ 7
+           //for(i=0;i<8;i++)  // 0 ~ 7
+           for(i=0;i<8;i+=dir_inc)  // 0 ~ 7
            {
               new_xy_val(y,x,i,&yy,&xx);
               if(check_dir(y,x,i) & (~visit[yy][xx]) & (data[yy][xx] == val))
